@@ -209,17 +209,17 @@ plots <- c("p1", "p2", "p3", "p4", "p5")
 
 for (i in seq_along(plots)) {
   ggsave(
-    filename = sprintf("Output/Plots/%s.png", plots[i]),
+    filename = sprintf("Output/docs/Plots/%s.png", plots[i]),
     plot = get(plots[i]),
     width = 7, height = 5, dpi = 300
   )
 }
 
 #setting plots to display on single html page via github
-image_files <- list.files("Output/Plots", pattern = "*.png", full.names = FALSE)
+image_files <- list.files("Output/docs/Plots", pattern = "*.png", full.names = FALSE)
 
 html_images <- lapply(image_files, function(img) {
-  tags$img(src = paste0("Output/Plots/", img), style = "width: 80%; margin-bottom: 30px;")
+  tags$img(src = paste0("Output/docs/Plots/", img), style = "width: 80%; margin-bottom: 30px;")
 })
 
 html_page <- tags$html(
@@ -231,7 +231,7 @@ html_page <- tags$html(
   )
 )
 
-save_html(html_page, file = "Output/Plots/index.html")
+save_html(html_page, file = "Output/docs/Plots/index.html")
 
 
 
