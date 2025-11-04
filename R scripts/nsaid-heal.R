@@ -6,6 +6,7 @@ library(dplyr)
 library(lubridate)
 library(ggplot2)
 library(htmltools)
+library(readxl)
 
 setwd("~/Sarah work stuff/2025 Data Projects/Weekly Metrics")
 
@@ -174,7 +175,6 @@ prescreen_counts <- result_df %>%
   summarise(count = n(), .groups = "drop") %>%
   mutate(type = "All prescreens")
 
-
 consent_counts <- result_df %>%
   mutate(consent_date = as.Date(consent_form_timestamp)) %>%
   filter(!is.na(consent_date)) %>%
@@ -204,8 +204,126 @@ p5 <- ggplot(monthly_counts, aes(x = month, y = count, fill = type)) +
                                "Signed consents" = "mediumseagreen")) +
   theme_minimal()
 
+#enrollment tracking per grant year, with goal numbers included
+
+# Define the start dates for each grant year
+grant_start_dates <- as.Date(c(
+  "2024-09-01",  # Grant Year 1
+  "2025-09-01",  # Grant Year 2
+  "2026-09-01",  # Grant Year 3
+  "2027-09-01",  # Grant Year 4
+  "2028-09-01"   # Grant Year 5
+))
+
+# Function to map a date to grant year number
+get_grant_year <- function(date) {
+  # Find the latest start date that is <= date
+  year_num <- max(which(grant_start_dates <= date))
+  return(year_num)
+}
+
+#add in grant year at time of enrollment
+result_df <- result_df %>%
+  mutate(consent_date = as.Date(consent_form_timestamp)) %>%
+  mutate(grant_year_enrollment = sapply(consent_date, get_grant_year))
+
+#add in grant year at time of baseline visit
+result_df <- result_df %>%
+  mutate(vitals_date_bl = as.Date(vitals_date_bl)) %>%
+  mutate(grant_year_baseline_visit = sapply(vitals_date_bl, get_grant_year))
+
+#Grant year 1 - consents
+consent_counts_y1 <- result_df %>%
+  filter(grant_year_enrollment == 1) %>%
+  mutate(month = factor(format(consent_date, "%b"), levels = month.abb)) %>%
+  group_by(month) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  mutate(type = "Enrollments")
+
+#Grant year 1 - baseline visits
+baseline_counts_y1 <- result_df %>%
+  filter(grant_year_baseline_visit == 1) %>%
+  mutate(month = factor(format(vitals_date_bl, "%b"), levels = month.abb)) %>%
+  group_by(month) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  mutate(type = "Baseline Visits")
+
+#import grant numbers for year 1
+grant_year_numbers_y1 <- read_excel("Raw files/grant_year_numbers.xlsx", 
+                                    sheet = "grant_y1")
+
+#Grant year 1 - combined
+year1 <- bind_rows(consent_counts_y1, baseline_counts_y1, grant_year_numbers_y1)
+
+#Specifying the order of the months and bars
+month_levels <- c("Sep", "Oct", "Nov", "Dec", "Jan", "Feb",
+                  "Mar", "Apr", "May", "Jun", "Jul", "Aug")
+
+type_levels <- c("Grant Enrollments and Baseline Visits",
+                 "Enrollments", "Baseline Visits")
+
+year1 <- year1 %>%
+  mutate(month = factor(month, levels = month_levels)) %>%
+  mutate(type = factor(type, levels = type_levels))
+
+#plot of actual vs expected visits for grant year 1
+p6 <- ggplot(year1, aes(x = month, y = count, fill = type)) +
+  geom_col(position = "dodge") +   
+  labs(x = "Month", y = "Count",
+       title = "Grant Year 1 - Actual vs Expected") +
+  scale_fill_manual(values = c("Enrollments" = "gray", 
+                               "Baseline Visits" = "mediumseagreen",
+                               "Grant Enrollments and Baseline Visits" = "tomato2")) +
+  theme_minimal()
+
+#Grant year 2 - consents
+consent_counts_y2 <- result_df %>%
+  filter(grant_year_enrollment == 2) %>%
+  mutate(month = factor(format(consent_date, "%b"), levels = month.abb)) %>%
+  group_by(month) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  mutate(type = "Enrollments")
+
+#Grant year 2 - baseline visits
+baseline_counts_y2 <- result_df %>%
+  filter(grant_year_baseline_visit == 2) %>%
+  mutate(month = factor(format(vitals_date_bl, "%b"), levels = month.abb)) %>%
+  group_by(month) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  mutate(type = "Baseline Visits")
+
+#import grant numbers for year 1
+grant_year_numbers_y2 <- read_excel("Raw files/grant_year_numbers.xlsx", 
+                                    sheet = "grant_y2")
+
+#Grant year 1 - combined
+year2 <- bind_rows(consent_counts_y2, baseline_counts_y2, grant_year_numbers_y2)
+
+#Specifying the order of the months and bars
+month_levels <- c("Sep", "Oct", "Nov", "Dec", "Jan", "Feb",
+                  "Mar", "Apr", "May", "Jun", "Jul", "Aug")
+
+type_levels <- c("Grant Enrollments and Baseline Visits",
+                 "Grant Follow up Visits",
+                 "Enrollments", "Baseline Visits")
+
+year2 <- year2 %>%
+  mutate(month = factor(month, levels = month_levels)) %>%
+  mutate(type = factor(type, levels = type_levels))
+
+#plot of actual vs expected visits for grant year 1
+p7 <- ggplot(year2, aes(x = month, y = count, fill = type)) +
+  geom_col(position = "dodge") +   
+  labs(x = "Month", y = "Count",
+       title = "Grant Year 2 - Actual vs Expected") +
+  scale_fill_manual(values = c("Enrollments" = "gray", 
+                               "Baseline Visits" = "mediumseagreen",
+                               "Grant Enrollments and Baseline Visits" = "tomato2", 
+                               "Grant Follow up Visits" = "tomato4")) +
+  theme_minimal()
+
 #saving plots
-plots <- c("p1", "p2", "p3", "p4", "p5")
+plots <- c("p1", "p2", "p3", "p4", "p5", "p6", "p7")
 
 for (i in seq_along(plots)) {
   ggsave(
