@@ -5,6 +5,7 @@ library(jsonlite)
 library(dplyr)
 library(lubridate)
 library(ggplot2)
+library(htmltools)
 
 setwd("~/Sarah work stuff/2025 Data Projects/Weekly Metrics")
 
@@ -100,7 +101,7 @@ result_df_plot <- result_df %>%
   filter(!is.na(screen_date)) %>%
   count(screen_date)
 
-ggplot(result_df_plot, aes(x = screen_date, y = n)) +
+p1 <- ggplot(result_df_plot, aes(x = screen_date, y = n)) +
   geom_line(color = "steelblue") +
   geom_point(color = "steelblue", size = 2) +
   geom_smooth(method = "loess", se = FALSE, color = "darkred", linetype = "dashed") +
@@ -118,7 +119,7 @@ result_df_weekly <- result_df %>%
   filter(!is.na(week_start)) %>%
   count(week_start)
 
-ggplot(result_df_weekly, aes(x = week_start, y = n)) +
+p2 <- ggplot(result_df_weekly, aes(x = week_start, y = n)) +
   geom_line(color = "steelblue") +
   geom_point(color = "steelblue", size = 2) +
   geom_smooth(method = "loess", se = FALSE, color = "darkred", linetype = "dashed") +
@@ -136,7 +137,7 @@ result_df_plot <- result_df %>%
   filter(!is.na(consent_date)) %>%
   count(consent_date)
 
-ggplot(result_df_plot, aes(x = consent_date, y = n)) +
+p3 <- ggplot(result_df_plot, aes(x = consent_date, y = n)) +
   geom_line(color = "steelblue") +
   geom_point(color = "steelblue", size = 2) +
   geom_smooth(method = "loess", se = FALSE, color = "darkred", linetype = "dashed") +
@@ -153,7 +154,7 @@ result_df_weekly <- result_df %>%
   filter(!is.na(week_start)) %>%
   count(week_start)
 
-ggplot(result_df_weekly, aes(x = week_start, y = n)) +
+p4 <- ggplot(result_df_weekly, aes(x = week_start, y = n)) +
   geom_line(color = "steelblue") +
   geom_point(color = "steelblue", size = 2) +
   geom_smooth(method = "loess", se = FALSE, color = "darkred", linetype = "dashed") +
@@ -194,7 +195,7 @@ eligible_counts <- result_df %>%
 monthly_counts <- bind_rows(prescreen_counts, consent_counts, eligible_counts)
 
 
-ggplot(monthly_counts, aes(x = month, y = count, fill = type)) +
+p5 <- ggplot(monthly_counts, aes(x = month, y = count, fill = type)) +
   geom_col(position = "dodge") +   
   labs(x = "Month", y = "Count",
        title = "Prescreens vs Consents per Month") +
@@ -202,4 +203,43 @@ ggplot(monthly_counts, aes(x = month, y = count, fill = type)) +
                                "Eligible Prescreens" = "tomato2",
                                "Signed consents" = "mediumseagreen")) +
   theme_minimal()
+
+#saving plots
+plots <- c("p1", "p2", "p3", "p4", "p5")
+
+for (i in seq_along(plots)) {
+  ggsave(
+    filename = sprintf("Output/Plots/%s.png", plots[i]),
+    plot = get(plots[i]),
+    width = 7, height = 5, dpi = 300
+  )
+}
+
+#setting plots to display on single html page via github
+image_files <- list.files("Output/Plots", pattern = "*.png", full.names = FALSE)
+
+html_images <- lapply(image_files, function(img) {
+  tags$img(src = paste0("Output/Plots/", img), style = "width: 80%; margin-bottom: 30px;")
+})
+
+html_page <- tags$html(
+  tags$head(tags$title("Weekly Plots")),
+  tags$body(
+    tags$h1("Weekly Plot Gallery"),
+    tags$p("Auto-updated from R"),
+    html_images
+  )
+)
+
+save_html(html_page, file = "Output/Plots/index.html")
+
+
+
+
+
+
+
+
+
+
 
