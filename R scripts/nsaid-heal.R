@@ -64,23 +64,23 @@ result_df <- left_join(result_df, result_df_comb, by = "record_id")
 
 #add columns that flag for various completions in last 7 days
 result_df <- result_df %>%
-  mutate(`Prescreens this week` = eligibility_screen_timestamp >= now() - days(8)) %>%
-  mutate(`Consents this week` = consent_form_timestamp >= now() - days(8)) %>%
-  mutate(`VBTs this week` = vbt_done_date >=now() - days(8)) %>%
-  mutate(`Baseline visits this week` = vitals_date_bl >=now() - days(8)) %>%
-  mutate(`Biospecimen cycle 3 this week` = vitals_date_bs3 >=now() - days(8))
+  mutate(`Prescreens this week` = eligibility_screen_timestamp >= now() - days(7)) %>%
+  mutate(`Consents this week` = consent_form_timestamp >= now() - days(7)) %>%
+  mutate(`VBTs this week` = vbt_done_date >=now() - days(7)) %>%
+  mutate(`Baseline visits this week` = vitals_date_bl >=now() - days(7)) %>%
+  mutate(`Biospecimen cycle 3 this week` = vitals_date_bs3 >=now() - days(7))
 
 #add columns that flag for various completions in last 14 days, not counting last 7
 result_df <- result_df %>%
-  mutate(`Prescreens last week` = eligibility_screen_timestamp >= now() - days(15) & 
+  mutate(`Prescreens last week` = eligibility_screen_timestamp >= now() - days(14) & 
            `Prescreens this week` != TRUE) %>%
-  mutate(`Consents last week` = consent_form_timestamp >= now() - days(15) & 
+  mutate(`Consents last week` = consent_form_timestamp >= now() - days(14) & 
   `Consents this week` != TRUE) %>%
-  mutate(`VBTs last week` = vbt_done_date >= now() - days(15) & 
+  mutate(`VBTs last week` = vbt_done_date >= now() - days(14) & 
            `VBTs this week` != TRUE) %>%
-  mutate(`Baseline visits last week` = vitals_date_bl >= now() - days(15) & 
+  mutate(`Baseline visits last week` = vitals_date_bl >= now() - days(14) & 
            `Baseline visits this week` != TRUE) %>%
-  mutate(`Biospecimen cycle 3 last week` = vitals_date_bs3 >= now() - days(15) & 
+  mutate(`Biospecimen cycle 3 last week` = vitals_date_bs3 >= now() - days(14) & 
            `Biospecimen cycle 3 this week` != TRUE)
 
 #save metrics
@@ -344,7 +344,7 @@ html_page <- tags$html(
   tags$head(tags$title("Weekly Plots")),
   tags$body(
     tags$h1("Weekly Plot Gallery"),
-    tags$p("Auto-updated from R 11.19.2025"),
+    tags$p("Auto-updated from R 11.26.2025"),
     html_images
   )
 )
