@@ -13,7 +13,7 @@ setwd("~/Sarah work stuff/2025 Data Projects/Weekly Metrics")
 token <- Sys.getenv("NSAIDHEAL_REDCAP_TOKEN")
 
 #!/usr/bin/env Rscript (generated from API playground)
-token <- token
+token <-token
 url <- "https://survey.northshore.org/api/"
 formData <- list("token"=token,
                  content='report',
@@ -344,10 +344,10 @@ html_page <- tags$html(
   tags$head(tags$title("Weekly Plots")),
   tags$body(
     tags$h1("Weekly Plot Gallery"),
-    tags$p("Auto-updated from R 1.7.2026"),
+    tags$p("Auto-updated from R 1.14.2026"),
     html_images
   )
-)
+) 
 
 save_html(html_page, file = "docs/index.html")
 
