@@ -344,7 +344,7 @@ html_page <- tags$html(
   tags$head(tags$title("Weekly Plots")),
   tags$body(
     tags$h1("Weekly Plot Gallery"),
-    tags$p("Auto-updated from R 3.11.2026"),
+    tags$p("Auto-updated from R 3.18.2026"),
     html_images
   )
 ) 
