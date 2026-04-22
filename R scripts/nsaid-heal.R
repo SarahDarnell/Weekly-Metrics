@@ -94,6 +94,7 @@ metrics <- result_df %>%
                    , ~ sum(.x, na.rm = TRUE)))
 
 write.csv(metrics, "Output/nsaid-heal-metrics.csv")
+write.csv(result_df, "Output/result_df.csv")
 
 
 #Plot of daily prescreens hits plus trend line
