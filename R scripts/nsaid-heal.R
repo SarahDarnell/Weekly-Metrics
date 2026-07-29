@@ -41,7 +41,8 @@ result_df <- result_df %>%
   mutate(vbt_question_launch_date = ymd(vbt_question_launch_date)) %>%
   mutate(vbt_done_date = ymd(vbt_done_date)) %>%
   mutate(bl_visit_schedule_date = ymd(bl_visit_schedule_date)) %>%
-  mutate(vitals_date_today = ymd(vitals_date_today))
+  mutate(vitals_date_today = ymd(vitals_date_today)) %>%
+  mutate(vbt_done_date_c6 = ymd(vbt_done_date_c6))
 
 #pivot from long to wide format
 result_df_bl <- result_df %>%
@@ -54,8 +55,26 @@ result_df_bs3 <- result_df %>%
   select(1, 15) %>%
   rename(vitals_date_bs3 = vitals_date_today)
 
-result_df_comb <- left_join(result_df_bl, result_df_bs3, by = "record_id")
+result_df_C6 <- result_df %>%
+  filter(redcap_event_name == "cycle_6_arm_1") %>%
+  select(1, 15) %>%
+  rename(vitals_date_c6 = vitals_date_today)
 
+result_df_bs9 <- result_df %>%
+  filter(redcap_event_name == "biospecimen_visit_arm_1b") %>%
+  select(1, 15) %>%
+  rename(vitals_date_bs9 = vitals_date_today)
+
+result_df_an <- result_df %>%
+  filter(redcap_event_name == "cycle_12_arm_1") %>%
+  select(1, 15) %>%
+  rename(vitals_date_an = vitals_date_today)
+
+result_df_comb <- left_join(result_df_bl, result_df_bs3,  by = "record_id")
+result_df_comb2 <- left_join(result_df_C6, result_df_bs9, by = "record_id")
+result_df_comb2 <- left_join(result_df_comb2, result_df_an, by = "record_id")
+result_df_comb <- left_join(result_df_comb, result_df_comb2, by = "record_id")
+                            
 result_df <- result_df %>%
   filter(redcap_event_name == "consent_ids_arm_1") %>%
   select(-15)
@@ -68,7 +87,11 @@ result_df <- result_df %>%
   mutate(`Consents this week` = consent_form_timestamp >= now() - days(7)) %>%
   mutate(`VBTs this week` = vbt_done_date >=now() - days(7)) %>%
   mutate(`Baseline visits this week` = vitals_date_bl >=now() - days(7)) %>%
-  mutate(`Biospecimen cycle 3 this week` = vitals_date_bs3 >=now() - days(7))
+  mutate(`Biospecimen cycle 3 this week` = vitals_date_bs3 >=now() - days(7)) %>%
+  mutate(`Cycle 6 visits this week` = vitals_date_c6 >=now() - days(7)) %>%
+  mutate(`Biospecimen cycle 9 this week` = vitals_date_bs9 >=now() - days(7)) %>%
+  mutate(`Annual visits this week` = vitals_date_an >=now() - days(7)) %>%
+  mutate(`Cycle 6 VBTs this week` = vbt_done_date_c6 >=now() - days(7))
 
 #add columns that flag for various completions in last 14 days, not counting last 7
 result_df <- result_df %>%
@@ -81,15 +104,95 @@ result_df <- result_df %>%
   mutate(`Baseline visits last week` = vitals_date_bl >= now() - days(14) & 
            `Baseline visits this week` != TRUE) %>%
   mutate(`Biospecimen cycle 3 last week` = vitals_date_bs3 >= now() - days(14) & 
-           `Biospecimen cycle 3 this week` != TRUE)
+           `Biospecimen cycle 3 this week` != TRUE) %>%
+  mutate(`Cycle 6 visits last week` = vitals_date_c6 >= now() - days(14) & 
+           `Cycle 6 visits this week` != TRUE) %>%
+  mutate(`Biospecimen cycle 9 last week` = vitals_date_bs9 >= now() - days(14) & 
+           `Biospecimen cycle 9 this week` != TRUE) %>%
+  mutate(`Annual visits last week` = vitals_date_an >= now() - days(14) & 
+           `Annual visits this week` != TRUE) %>%
+  mutate(`Cycle 6 VBTs last week` = vitals_date_an >= now() - days(14) & 
+           `Cycle 6 VBTs this week` != TRUE)
+
+#make enrollment status, group,and visit completions a factor
+result_df$enrollment_status <- as.factor(result_df$enrollment_status)
+result_df$group <- as.factor(result_df$group)
+result_df$vbt_yn_c6 <- as.factor(result_df$vbt_yn_c6)
+result_df$bio_3_visit_call_status <- as.factor(result_df$bio_3_visit_call_status)
+result_df$bio_6_visit_call_status <- as.factor(result_df$bio_6_visit_call_status)
+result_df$bio_9_visit_call_status <- as.factor(result_df$bio_9_visit_call_status)
+result_df$annual_visit_call_status <- as.factor(result_df$annual_visit_call_status)
+
+#make boolean columns for randomization and visit completions
+result_df <- result_df %>%
+  mutate(`Randomized to drug` = if_else(
+    !is.na(vitals_date_bl) & (group == 1 | group == 2), TRUE, FALSE
+  )) %>%
+  mutate(`In progress and randomized` = if_else(
+    `Randomized to drug` == TRUE & enrollment_status == 1, TRUE, FALSE
+  )) %>%
+  mutate(`In progress, not randomized` = if_else(
+    `Randomized to drug` == FALSE & enrollment_status == 1, TRUE, FALSE
+  )) %>%
+  mutate(`Completed study, on annual follow-up` = if_else(
+    `Randomized to drug` == TRUE & enrollment_status == 4, TRUE, FALSE
+  )) %>%
+  mutate(`Completed study and annual follow-up` = if_else(
+    `Randomized to drug` == TRUE & enrollment_status == 5, TRUE, FALSE
+  )) %>%
+  mutate(`Completed study, declined annual follow-up` = if_else(
+    `Randomized to drug` == TRUE & enrollment_status == 7, TRUE, FALSE
+  )) %>%
+  mutate(`Completed cycle 3 Visit` = if_else(
+    `Randomized to drug` == TRUE & !is.na(vitals_date_bs3) & 
+      bio_3_visit_call_status == 1, TRUE, FALSE
+  )) %>%
+  mutate(`Completed cycle 6 Visit` = if_else(
+    `Randomized to drug` == TRUE & !is.na(vitals_date_c6) & 
+      bio_6_visit_call_status == 1, TRUE, FALSE
+  )) %>%
+  mutate(`Completed cycle 6 VBT` = if_else(
+    `Randomized to drug` == TRUE & vbt_yn_c6 == 1, TRUE, FALSE
+  )) %>%
+  mutate(`Completed cycle 9 Visit` = if_else(
+    `Randomized to drug` == TRUE & !is.na(vitals_date_bs9) & 
+      bio_9_visit_call_status == 1, TRUE, FALSE
+  )) %>%
+  mutate(`Completed Annual Visit` = if_else(
+    `Randomized to drug` == TRUE & !is.na(vitals_date_an) & 
+      annual_visit_call_status == 1, TRUE, FALSE
+  )) %>%
+  mutate(`Withdrawn, not randomized` = if_else(
+    `Randomized to drug` == FALSE & (enrollment_status == 2 |
+      enrollment_status == 3), TRUE, FALSE
+  )) %>%
+  mutate(`Withdrawn, randomized` = if_else(
+    `Randomized to drug` == TRUE & (enrollment_status == 2 |
+      enrollment_status == 3), TRUE, FALSE
+  ))
 
 #save metrics
 metrics <- result_df %>%
   summarise(across(c(`Prescreens this week`, `Prescreens last week`, 
+                     `In progress, not randomized`,
+                     `Withdrawn, not randomized`,
                      `Consents this week`, `Consents last week`,
-                     `VBTs this week`, `VBTs last week`, 
+                     `Randomized to drug`, `In progress and randomized`,
+                     `Withdrawn, randomized`,
                      `Baseline visits this week`, `Baseline visits last week`, 
-                     `Biospecimen cycle 3 this week`, `Biospecimen cycle 3 last week`
+                     `Completed cycle 3 Visit`,
+                     `Biospecimen cycle 3 this week`, `Biospecimen cycle 3 last week`,
+                     `Completed cycle 6 Visit`, 
+                     `Cycle 6 visits this week`, `Cycle 6 visits last week`,
+                     `Completed cycle 6 VBT`,
+                     `Cycle 6 VBTs this week`, `Cycle 6 VBTs last week`, 
+                     `Completed cycle 9 Visit`,
+                     `Biospecimen cycle 9 this week`, `Biospecimen cycle 9 last week`,
+                     `Completed Annual Visit` ,
+                     `Annual visits this week`, `Annual visits last week`,
+                     `Completed study, on annual follow-up`, 
+                     `Completed study and annual follow-up`, 
+                     `Completed study, declined annual follow-up`
                      )
                    , ~ sum(.x, na.rm = TRUE)))
 
@@ -233,6 +336,11 @@ result_df <- result_df %>%
   mutate(vitals_date_bl = as.Date(vitals_date_bl)) %>%
   mutate(grant_year_baseline_visit = sapply(vitals_date_bl, get_grant_year))
 
+#add in grant year at time of annual visit
+result_df <- result_df %>%
+  mutate(vitals_date_an = as.Date(vitals_date_an)) %>%
+  mutate(grant_year_annual_visit = sapply(vitals_date_an, get_grant_year))
+
 #Grant year 1 - consents
 consent_counts_y1 <- result_df %>%
   filter(grant_year_enrollment == 1) %>%
@@ -293,12 +401,21 @@ baseline_counts_y2 <- result_df %>%
   summarise(count = n(), .groups = "drop") %>%
   mutate(type = "Baseline Visits")
 
+#Grant year 2 - annual visits
+annual_counts_y2 <- result_df %>%
+  filter(grant_year_annual_visit == 2) %>%
+  mutate(month = factor(format(vitals_date_an, "%b"), levels = month.abb)) %>%
+  group_by(month) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  mutate(type = "Annual Visits")
+
 #import grant numbers for year 1
 grant_year_numbers_y2 <- read_excel("Raw files/grant_year_numbers.xlsx", 
                                     sheet = "grant_y2")
 
 #Grant year 1 - combined
-year2 <- bind_rows(consent_counts_y2, baseline_counts_y2, grant_year_numbers_y2)
+year2 <- bind_rows(consent_counts_y2, baseline_counts_y2, grant_year_numbers_y2, 
+                   annual_counts_y2)
 
 #Specifying the order of the months and bars
 month_levels <- c("Sep", "Oct", "Nov", "Dec", "Jan", "Feb",
@@ -306,7 +423,7 @@ month_levels <- c("Sep", "Oct", "Nov", "Dec", "Jan", "Feb",
 
 type_levels <- c("Grant Enrollments and Baseline Visits",
                  "Grant Follow up Visits",
-                 "Enrollments", "Baseline Visits")
+                 "Enrollments", "Baseline Visits", "Annual Visits")
 
 year2 <- year2 %>%
   mutate(month = factor(month, levels = month_levels)) %>%
@@ -319,6 +436,7 @@ p7 <- ggplot(year2, aes(x = month, y = count, fill = type)) +
        title = "Grant Year 2 - Actual vs Expected") +
   scale_fill_manual(values = c("Enrollments" = "gray", 
                                "Baseline Visits" = "mediumseagreen",
+                               "Annual Visits" = "darkgreen",
                                "Grant Enrollments and Baseline Visits" = "tomato2", 
                                "Grant Follow up Visits" = "tomato4")) +
   theme_minimal()
@@ -345,7 +463,7 @@ html_page <- tags$html(
   tags$head(tags$title("Weekly Plots")),
   tags$body(
     tags$h1("Weekly Plot Gallery"),
-    tags$p("Auto-updated from R 7.22.2026"),
+    tags$p("Auto-updated from R 7.29.2026"),
     html_images
   )
 ) 
