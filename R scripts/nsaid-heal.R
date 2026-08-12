@@ -463,7 +463,7 @@ html_page <- tags$html(
   tags$head(tags$title("Weekly Plots")),
   tags$body(
     tags$h1("Weekly Plot Gallery"),
-    tags$p("Auto-updated from R 7.29.2026"),
+    tags$p("Auto-updated from R 8.12.2026"),
     html_images
   )
 ) 
