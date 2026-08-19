@@ -131,6 +131,12 @@ result_df <- result_df %>%
   mutate(`In progress and randomized` = if_else(
     `Randomized to drug` == TRUE & enrollment_status == 1, TRUE, FALSE
   )) %>%
+  mutate(`Randomized - DYS` = if_else(
+    `Randomized to drug` == TRUE & group == 1, TRUE, FALSE
+  )) %>%
+  mutate(`Randomized - DYSB` = if_else(
+    `Randomized to drug` == TRUE & group == 2, TRUE, FALSE
+  )) %>%
   mutate(`In progress, not randomized` = if_else(
     `Randomized to drug` == FALSE & enrollment_status == 1, TRUE, FALSE
   )) %>%
@@ -180,6 +186,8 @@ metrics <- result_df %>%
                      `Randomized to drug`, `In progress and randomized`,
                      `Withdrawn, randomized`,
                      `Baseline visits this week`, `Baseline visits last week`, 
+                     `Randomized - DYS`,
+                     `Randomized - DYSB`,
                      `Completed cycle 3 Visit`,
                      `Biospecimen cycle 3 this week`, `Biospecimen cycle 3 last week`,
                      `Completed cycle 6 Visit`, 
@@ -463,7 +471,7 @@ html_page <- tags$html(
   tags$head(tags$title("Weekly Plots")),
   tags$body(
     tags$h1("Weekly Plot Gallery"),
-    tags$p("Auto-updated from R 8.12.2026"),
+    tags$p("Auto-updated from R 8.19.2026"),
     html_images
   )
 ) 
